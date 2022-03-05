@@ -14,3 +14,19 @@ services:
       - .:/go/src/app
     ports:
       - ${PORT}:${PORT}
+  db-dev:
+    image: mysql:8.0
+    platform: linux/x86_64
+    environment:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+    container_name: db-dev
+    restart: always
+    volumes:
+      - data-dev:/var/lib/mysql
+
+volumes:
+  data-dev:
+    driver: local
