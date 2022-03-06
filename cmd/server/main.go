@@ -23,11 +23,24 @@ var albums = []album{
 
 // ginのContextはリクエストの詳細や認証，シリアライズされたJSONを渡す
 func getAlbums(ctx *gin.Context) {
-	ctx.IndentedJSON(http.StatusOK, albums) // ステータスコード200で構造体albumsをJSONにシリアライズ
+	ctx.IndentedJSON(http.StatusOK, albums) // ステータスコード200で構造体albumsをJSONにシリアライズしてレスポンス
+}
+
+func postAlbums(ctx *gin.Context) {
+	var newAlbum album
+
+	// リクエストボディの値をnewAlbumにバインド
+	if err := ctx.BindJSON(&newAlbum); err != nil {
+		return
+	}
+
+	albums = append(albums, newAlbum)
+	ctx.IndentedJSON(http.StatusOK, newAlbum)
 }
 
 func main() {
 	router := gin.Default()
 	router.GET("/albums", getAlbums) // エンドポイントとハンドラーをマッピング（渡しているのはハンドラーであってハンドラー関数の結果ではない点に注意）
+	router.POST("/albums", postAlbums)
 	router.Run("localhost:8080")
 }
