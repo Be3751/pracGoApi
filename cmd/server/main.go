@@ -38,9 +38,25 @@ func postAlbums(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, newAlbum)
 }
 
+func getAlbumByID(ctx *gin.Context) {
+	id := ctx.Param("id") // URLパラメータの値を取得
+
+	// 条件を満たすalbumを取得
+	// 本来ならBDにクエリを実行する
+	for _, album := range albums {
+		if album.ID == id {
+			ctx.IndentedJSON(http.StatusOK, album)
+			return
+		}
+	}
+	ctx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"}) // 該当データがない場合，ステータスコード404でメッセージを返す
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/albums", getAlbums) // エンドポイントとハンドラーをマッピング（渡しているのはハンドラーであってハンドラー関数の結果ではない点に注意）
+	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
+
 	router.Run("localhost:8080")
 }
