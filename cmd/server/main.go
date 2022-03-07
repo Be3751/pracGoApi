@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 )
 
 // タグによりJSONにシリアライズ
@@ -21,6 +23,16 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
+var Db *sql.DB // 構造体sql.DBの宣言
+
+func init() {
+	var err error
+	Db, err = sql.Open("postgres", "user=gwp dbname=gwp password=ppp sslmode=disable") // DB接続
+	if err != nil {
+		panic(err)
+	}
+}
+
 // ginのContextはリクエストの詳細や認証，シリアライズされたJSONを渡す
 func getAlbums(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, albums) // ステータスコード200で構造体albumsをJSONにシリアライズしてレスポンス
@@ -33,9 +45,21 @@ func postAlbums(ctx *gin.Context) {
 	if err := ctx.BindJSON(&newAlbum); err != nil {
 		return
 	}
+	newAlbum.Create()
 
 	albums = append(albums, newAlbum)
 	ctx.IndentedJSON(http.StatusOK, newAlbum)
+}
+
+func (album *album) Create() (err error) {
+	statement := "insert into albums (title, artist, price) values ($1, $2, $3) returning id"
+	stmt, err := Db.Prepare(statement)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(album.Title, album.Artist, album.Price).Scan(&album.ID)
+	return
 }
 
 func getAlbumByID(ctx *gin.Context) {
