@@ -31,11 +31,38 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	for _, album := range albums {
+		album.CreateAlbum()
+	}
 }
 
 // ginのContextはリクエストの詳細や認証，シリアライズされたJSONを渡す
 func getAlbums(ctx *gin.Context) {
-	ctx.IndentedJSON(http.StatusOK, albums) // ステータスコード200で構造体albumsをJSONにシリアライズしてレスポンス
+	albums, err := GetAlbums()
+	if err == nil {
+		ctx.IndentedJSON(http.StatusOK, albums) // ステータスコード200で構造体albumsをJSONにシリアライズしてレスポンス
+	}
+}
+
+func GetAlbums() ([]album, error) {
+	var albums []album
+	rows, err := Db.Query("select * from albums")
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		album := album{}
+		err = rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price)
+		if err != nil {
+			return nil, err
+		}
+		albums = append(albums, album)
+	}
+	rows.Close()
+
+	return albums, nil
 }
 
 func postAlbums(ctx *gin.Context) {
@@ -45,13 +72,13 @@ func postAlbums(ctx *gin.Context) {
 	if err := ctx.BindJSON(&newAlbum); err != nil {
 		return
 	}
-	newAlbum.Create()
+	newAlbum.CreateAlbum()
 
 	albums = append(albums, newAlbum)
 	ctx.IndentedJSON(http.StatusOK, newAlbum)
 }
 
-func (album *album) Create() (err error) {
+func (album *album) CreateAlbum() (err error) {
 	statement := "insert into albums (title, artist, price) values ($1, $2, $3) returning id"
 	stmt, err := Db.Prepare(statement)
 	if err != nil {
