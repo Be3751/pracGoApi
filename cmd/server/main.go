@@ -92,15 +92,17 @@ func (album *album) CreateAlbum() (err error) {
 func getAlbumByID(ctx *gin.Context) {
 	id := ctx.Param("id") // URLパラメータの値を取得
 
-	// 条件を満たすalbumを取得
-	// 本来ならBDにクエリを実行する
-	for _, album := range albums {
-		if album.ID == id {
-			ctx.IndentedJSON(http.StatusOK, album)
-			return
-		}
+	album, err := GetAlbumByID(id)
+	if err != nil {
+		ctx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"}) // 該当データがない場合，ステータスコード404でメッセージを返す
+		return
 	}
-	ctx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"}) // 該当データがない場合，ステータスコード404でメッセージを返す
+	ctx.IndentedJSON(http.StatusOK, album)
+}
+
+func GetAlbumByID(id string) (album album, err error) {
+	err = Db.QueryRow("select id, title, artist, price from albums where id = $1", id).Scan(&album.ID, &album.Title, &album.Artist, &album.Price)
+	return
 }
 
 func main() {
